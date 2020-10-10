@@ -1,14 +1,14 @@
 package de.pauhull.scravajiptide;
 
 import com.formdev.flatlaf.FlatDarculaLaf;
-import com.formdev.flatlaf.FlatDarkLaf;
+import de.pauhull.scravajiptide.gui.MainWindow;
 
 public class Main {
 
-    public static void main(String[] args) throws Exception {
+    public static void main(String[] args) {
 
         FlatDarculaLaf.install();
-        new MainGUI();
+        new MainWindow();
     }
 
 }

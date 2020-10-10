@@ -1,19 +1,25 @@
-package de.pauhull.scravajiptide;
+package de.pauhull.scravajiptide.gui;
 import de.pauhull.scravajipt.compiler.Compiler;
 
 import de.pauhull.scravajipt.compiler.CompilerException;
+import de.pauhull.scravajipt.program.Program;
 import de.pauhull.scravajipt.syntax.InstructionSyntax;
 import de.pauhull.scravajiptide.ui.ErrorUnderline;
 import de.pauhull.scravajiptide.ui.IDETextPane;
 
 import javax.swing.*;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
+import javax.swing.event.UndoableEditEvent;
+import javax.swing.event.UndoableEditListener;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.swing.text.*;
+import javax.swing.undo.UndoManager;
 import java.awt.*;
 import java.awt.event.*;
 import java.io.*;
 
-public class MainGUI extends JFrame {
+public class MainWindow extends JFrame {
 
     private static final String[] stringsToHighlight = {"+", "-", "*", "/", "==", "<=", ">=", "!=", "<", ">", "&&", "||", "true", "false", "%"};
     private final Style defaultStyle, instructionStyle, commentStyle, variableStyle, stringStyle, highlightStyle, errorStyle;
@@ -27,10 +33,10 @@ public class MainGUI extends JFrame {
     private JButton exportButton;
     private JButton runButton;
 
-    public MainGUI() {
+    public MainWindow() {
 
         this.add(mainPanel);
-        this.setSize(500, 500);
+        this.setSize(700, 900);
         this.setLocationRelativeTo(null);
         this.setTitle("ScravaJipt IDE");
         this.setVisible(true);
@@ -45,6 +51,20 @@ public class MainGUI extends JFrame {
                 }
             }
         });
+
+        UndoManager undoManager = new UndoManager();
+        textPane.getStyledDocument().addUndoableEditListener(new UndoableEditListener() {
+            @Override
+            public void undoableEditHappened(UndoableEditEvent e) {
+                System.out.println("test");
+                undoManager.addEdit(e.getEdit());
+            }
+        });
+
+        this.mainPanel.registerKeyboardAction(e -> undoManager.undo(), KeyStroke.getKeyStroke(KeyEvent.VK_Z, InputEvent.CTRL_MASK), JComponent.WHEN_IN_FOCUSED_WINDOW);
+
+        this.mainPanel.registerKeyboardAction(e -> openFile(), KeyStroke.getKeyStroke(KeyEvent.VK_O, InputEvent.CTRL_MASK), JComponent.WHEN_IN_FOCUSED_WINDOW);
+        this.mainPanel.registerKeyboardAction(e -> saveProjectFile(), KeyStroke.getKeyStroke(KeyEvent.VK_S, InputEvent.CTRL_MASK), JComponent.WHEN_IN_FOCUSED_WINDOW);
 
         newButton.addMouseListener(new MouseAdapter() {
             @Override
@@ -80,6 +100,32 @@ public class MainGUI extends JFrame {
             @Override
             public void mouseClicked(MouseEvent e) {
                 saveProgramFile();
+            }
+        });
+
+        runButton.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+
+                try {
+                    Compiler compiler = new Compiler();
+                    String text = textPane.getDocument().getText(0, textPane.getDocument().getLength());
+
+                    Program program;
+
+                    try {
+                        program = compiler.compile(text);
+                    } catch (CompilerException ex) {
+
+                        JOptionPane.showMessageDialog(MainWindow.this,
+                                "Couldn't compile program because there was an error in line " + (ex.line + 1) + ": " + ex.message);
+                        return;
+                    }
+
+                    new ConsoleWindow(program);
+                } catch (BadLocationException badLocationException) {
+                    badLocationException.printStackTrace();
+                }
             }
         });
 
